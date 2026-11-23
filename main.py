@@ -1,8 +1,13 @@
 #!/usr/bin/env python3
-"""The World in One Day - 23 November 2026.
+"""The World Today - 23 November 2026.
 
 Draws a newspaper front page (1024x1024 PNG) summing up the world's
 news of Monday 23 November 2026, as reported on that day.
+
+My own layout: a masthead, a lead story on the COP31 collapse with a
+full-width banner illustration and a two-column summary, then four
+stories in a 2x2 grid, each with a drawn scene strip on top, then an
+also-today strip and a footer.
 
 Deterministic: fixed stories, fixed fonts, fixed geometry, no clock,
 no randomness, no network. Running it twice produces byte-identical
@@ -19,97 +24,92 @@ Usage:
 
 import os
 import shutil
-import sys
 
 # ---------------------------------------------------------------- stories
-# All five stories were in the news on Monday 23 November 2026, verified
-# against reporting published that day. Figures are as reported then.
-MASTHEAD = "The World in One Day"
+# Five stories, each verified against reporting published on 23 Nov 2026.
+MASTHEAD = "The World Today"
 DATELINE = "MONDAY, 23 NOVEMBER 2026"
 
-HEADLINE_KICKER = "THE GULF  |  WORLD POLITICS"
-HEADLINE = "Bahrain takes Iran to the U.N. after strike on civilian plant"
-HEADLINE_SUB = (
-    "Bahrain says an Iranian strike set a civilian industrial facility "
-    "ablaze near Manama, with no injuries reported. Saudi Arabia condemns "
-    "the attack and backs Bahrain's call for United Nations action, as a "
-    "Houthi missile aimed at western Saudi Arabia is intercepted."
+LEAD_KICKER = "CLIMATE SUMMIT  |  ANTALYA, TURKIYE"
+LEAD_HEADLINE = "Climate talks collapse as COP31 ends with no deal"
+LEAD_SUB = (
+    "COP31 collapsed in Antalya on Sunday after two weeks of talks, the "
+    "longest climate summit ever. More than 190 countries rejected the "
+    "Antalya Pact because its final draft never mentioned fossil fuels. "
+    "The EU refused a deal that ignored the cause of warming, while oil "
+    "states pushed back. It is the first major breakdown since "
+    "Copenhagen in 2009."
 )
 
 STORIES = [
     {
-        "kicker": "MARKETS",
-        "headline": "Wall Street opens the week in correction",
+        "kicker": "WAR  |  UKRAINE",
+        "headline": "Drone strike near Kyiv leaves 14 missing",
         "body": (
-            "The S&P 500 closed Friday at 6,910.39, down 8.61% on the week "
-            "and 3.7% on the day, as AI shares slid. The Nasdaq fell 10% "
-            "on the week; Nvidia lost 22.9% amid reports of an SEC "
-            "accounting probe."
+            "A Russian drone hit a five-storey block in Dymer, north of "
+            "Kyiv, collapsing part of it. Nine were evacuated."
         ),
-        "icon": "markets",
+        "icon": "kyiv",
     },
     {
-        "kicker": "SCIENCE  |  SPACE",
-        "headline": "BepiColombo is now circling Mercury",
+        "kicker": "CRIME  |  MEXICO",
+        "headline": "FBI most-wanted 'Chapo Isidro' captured",
         "body": (
-            "After eight years and 6 billion miles, the ESA-JAXA probe has "
-            "been captured by Mercury's gravity - only the second mission "
-            "ever to orbit the smallest planet. Its two orbiters part in "
-            "December."
+            "Mexican forces seized Fausto Isidro Meza-Flores in Guasave, "
+            "Sinaloa. Eleven died in the gun battles that followed the "
+            "raid."
         ),
-        "icon": "mercury",
+        "icon": "chapo",
     },
     {
         "kicker": "DISASTER  |  INDONESIA",
-        "headline": "Search resumes after Java factory fire",
+        "headline": "Dozens missing after Java factory fire",
         "body": (
-            "Rescuers are searching for dozens missing after a fire tore "
-            "through a candy factory in Cikande, Banten. Three are "
-            "confirmed dead; seven body bags recovered."
+            "Fire tore through a candy factory in Cikande, Banten. Three "
+            "are dead and 24 body bags recovered as the search resumes."
         ),
         "icon": "fire",
     },
     {
         "kicker": "SPORT  |  CRICKET",
-        "headline": "India declare 720/9 in Wellington",
+        "headline": "India declare on a record 720/9",
         "body": (
             "India posted the highest Test innings ever in New Zealand, "
-            "declaring at 720/9 for a 352-run lead. New Zealand closed day "
-            "four on 119/2, still 233 runs behind."
+            "declaring at 720/9 on day four of the first Test in "
+            "Wellington."
         ),
         "icon": "cricket",
     },
 ]
 
 ALSO_TODAY = (
-    "ALSO TODAY  -  COP31 ends with no deal in Antalya  |  Nepal PM Shah "
-    "meets PM Modi in New Delhi"
+    "ALSO TODAY  \u2022  Nepal PM Shah holds talks with Modi in New Delhi  "
+    "\u2022  Seoul: education minister quits over AI exam-cheating scandal  "
+    "\u2022  Russian cargo ship still burning off Finland"
 )
 
 FOOTER = (
-    "The World in One Day  -  Monday 23 November 2026  -  All stories as "
-    "reported on 23 November 2026"
+    "The World Today  \u2014  Monday 23 November 2026  \u2014  All stories "
+    "as reported on 23 November 2026"
 )
 
 # ---------------------------------------------------------------- palette
-PAPER = (248, 244, 233)
-INK = (17, 17, 17)
-MUTED = (85, 85, 85)
-ACCENT = (155, 28, 28)
-NAVY = (31, 58, 95)
-RULE = (17, 17, 17)
-PANEL = (232, 226, 208)
-GOLD = (176, 141, 87)
+PAPER = (250, 246, 235)
+INK = (16, 16, 16)
+MUTED = (88, 88, 88)
+ACCENT = (150, 30, 30)
+NAVY = (30, 60, 100)
+RULE = (16, 16, 16)
+TEAL = (18, 78, 92)
 
 SIZE = 1024
-MARGIN = 28
+MARGIN = 30
 
 
 def load_font(bold=False, serif=False, size=20):
     """Best available font, deterministic order; bitmap fallback last."""
     from PIL import ImageFont
 
-    names = []
     if serif:
         names = ["DejaVuSerif-Bold.ttf", "DejaVuSerif.ttf",
                  "LiberationSerif-Bold.ttf", "LiberationSerif-Regular.ttf"]
@@ -153,87 +153,144 @@ def draw_rule(draw, y, x0=None, x1=None, width=2):
     draw.line([(x0, y), (x1, y)], fill=RULE, width=width)
 
 
+def draw_banner(draw, box):
+    """COP31 banner: globe, summit hall and a rising thermometer."""
+    x0, y0, x1, y1 = box
+    draw.rectangle(box, fill=TEAL, outline=RULE, width=2)
+    # globe, left
+    gx, gy, gr = x0 + 62, (y0 + y1) // 2, 32
+    draw.ellipse([gx - gr, gy - gr, gx + gr, gy + gr],
+                 fill=(240, 226, 170), outline=INK, width=2)
+    draw.ellipse([gx - 12, gy - gr, gx + 12, gy + gr],
+                 outline=(120, 150, 140), width=1)
+    draw.line([(gx - gr, gy), (gx + gr, gy)], fill=(120, 150, 140),
+              width=1)
+    # summit hall, centre: three pavilions with flags
+    base = y1 - 8
+    for i, h in enumerate((34, 48, 34)):
+        bx = x0 + 220 + i * 86
+        draw.rectangle([bx, base - h, bx + 66, base],
+                       fill=(10, 38, 54), outline=(150, 190, 200), width=1)
+        draw.polygon([(bx - 4, base - h), (bx + 33, base - h - 18),
+                      (bx + 70, base - h)], fill=(10, 38, 54),
+                     outline=(150, 190, 200))
+        draw.line([(bx + 33, base - h - 18), (bx + 33, base - h - 32)],
+                  fill=(240, 226, 170), width=2)
+        draw.polygon([(bx + 33, base - h - 32), (bx + 49, base - h - 28),
+                      (bx + 33, base - h - 24)], fill=ACCENT)
+    # thermometer, right: mercury rising past the mark
+    tx = x1 - 72
+    draw.rectangle([tx - 7, y0 + 14, tx + 7, y1 - 26],
+                   fill=(240, 240, 230), outline=INK, width=2)
+    draw.ellipse([tx - 14, y1 - 36, tx + 14, y1 - 8],
+                 fill=ACCENT, outline=INK, width=2)
+    draw.rectangle([tx - 4, y0 + 30, tx + 4, y1 - 24], fill=ACCENT)
+    for ty in (y0 + 22, y0 + 38, y0 + 54):
+        draw.line([(tx + 8, ty), (tx + 18, ty)], fill=INK, width=2)
+    # cracked ground
+    draw.line([(x0, y1 - 8), (x1, y1 - 8)], fill=(10, 38, 54), width=2)
+    draw.line([(x0 + 420, y1 - 8), (x0 + 436, y1 - 2),
+               (x0 + 452, y1 - 8)], fill=(10, 38, 54), width=1)
+
+
 def draw_icon(draw, kind, box):
-    """Small drawn picture for a story cell. Pure vector shapes."""
+    """A drawn scene strip across the top of a story cell."""
     x0, y0, x1, y1 = box
-    draw.rectangle(box, fill=PANEL, outline=RULE, width=1)
-    cx, cy = (x0 + x1) // 2, (y0 + y1) // 2
-    if kind == "markets":
-        base = y1 - 18
-        heights = [22, 38, 30, 52, 40, 64, 46]
-        bw = 12
-        x = x0 + 14
-        for h in heights:
-            draw.rectangle([x, base - h, x + bw, base], fill=NAVY)
-            x += 15
-        draw.line([(x0 + 12, base - 66), (x1 - 18, base - 36)],
-                  fill=ACCENT, width=3)
-        draw.polygon([(x1 - 18, base - 36), (x1 - 30, base - 38),
-                      (x1 - 22, base - 26)], fill=ACCENT)
-    elif kind == "mercury":
-        draw.ellipse([cx - 26, cy - 26, cx + 26, cy + 26],
-                     fill=(150, 110, 70), outline=INK, width=2)
-        draw.ellipse([x0 + 8, cy - 40, x1 - 8, cy + 40],
-                     outline=ACCENT, width=2)
-        draw.ellipse([x1 - 26, cy - 44, x1 - 16, cy - 34],
-                     fill=ACCENT)
-        draw.ellipse([cx - 34, cy - 10, cx - 24, cy], fill=INK)
+    draw.rectangle(box, fill=(232, 226, 208), outline=RULE, width=1)
+    cx = (x0 + x1) // 2
+    if kind == "kyiv":
+        draw.rectangle(box, fill=(22, 32, 62))
+        # lit windows on the standing blocks
+        draw.rectangle([x0 + 16, y1 - 30, x0 + 60, y1 - 4],
+                       fill=(88, 98, 120))
+        for wy in (y1 - 26, y1 - 16):
+            for wx in (x0 + 24, x0 + 40):
+                draw.rectangle([wx, wy, wx + 8, wy + 6],
+                               fill=(240, 210, 110))
+        # collapsed middle: jagged rubble pile
+        draw.polygon([(x0 + 66, y1 - 4), (x0 + 66, y1 - 14),
+                      (x0 + 76, y1 - 20), (x0 + 84, y1 - 10),
+                      (x0 + 94, y1 - 18), (x0 + 100, y1 - 4)],
+                     fill=(52, 58, 74))
+        draw.rectangle([x0 + 104, y1 - 30, x0 + 148, y1 - 4],
+                       fill=(88, 98, 120))
+        for wy in (y1 - 26, y1 - 16):
+            for wx in (x0 + 112, x0 + 128):
+                draw.rectangle([wx, wy, wx + 8, wy + 6],
+                               fill=(240, 210, 110))
+        # smoke over the gap
+        draw.ellipse([x0 + 64, y0 + 2, x0 + 92, y0 + 18],
+                     fill=(170, 170, 170))
+        draw.ellipse([x0 + 80, y0 + 10, x0 + 106, y0 + 24],
+                     fill=(140, 140, 140))
+        # drone, top right
+        dx, dy = x1 - 46, y0 + 12
+        draw.line([(dx - 12, dy), (dx + 12, dy)], fill=(220, 220, 220),
+                  width=2)
+        draw.line([(dx, dy - 8), (dx, dy + 8)], fill=(220, 220, 220),
+                  width=2)
+        for px, py in ((-12, 0), (12, 0), (0, -8), (0, 8)):
+            draw.ellipse([dx + px - 3, dy + py - 3, dx + px + 3,
+                          dy + py + 3], fill=(220, 220, 220))
+    elif kind == "chapo":
+        draw.rectangle(box, fill=(24, 40, 76))
+        # gold star badge
+        sx, sy = x0 + 34, (y0 + y1) // 2
+        pts = []
+        import math
+        for i in range(10):
+            ang = -math.pi / 2 + i * math.pi / 5
+            r = 16 if i % 2 == 0 else 7
+            pts.append((sx + r * math.cos(ang), sy + r * math.sin(ang)))
+        draw.polygon(pts, fill=(214, 178, 80), outline=INK)
+        # handcuffs: two linked rings
+        for hx in (cx - 26, cx + 26):
+            draw.ellipse([hx - 14, y0 + 10, hx + 14, y1 - 10],
+                         outline=(220, 220, 220), width=3)
+        draw.line([(cx - 12, (y0 + y1) // 2), (cx + 12, (y0 + y1) // 2)],
+                  fill=(220, 220, 220), width=3)
+        # cell bars, right
+        for bx in range(x1 - 84, x1 - 8, 14):
+            draw.line([(bx, y0 + 4), (bx, y1 - 4)], fill=(180, 180, 180),
+                      width=3)
     elif kind == "fire":
-        draw.rectangle([x0 + 14, y1 - 46, x0 + 44, y1 - 14],
-                       fill=MUTED)
-        draw.rectangle([x0 + 52, y1 - 58, x0 + 88, y1 - 14],
-                       fill=(90, 90, 90))
-        draw.polygon([(cx - 4, y0 + 18), (cx + 16, y0 + 46),
-                      (cx + 6, y0 + 46), (cx + 22, y0 + 62),
-                      (cx - 16, y0 + 62), (cx - 2, y0 + 46)],
-                     fill=(217, 84, 30))
-        draw.polygon([(cx - 2, y0 + 38), (cx + 10, y0 + 54),
-                      (cx - 12, y0 + 54)], fill=(240, 180, 40))
+        draw.rectangle(box, fill=(64, 48, 40))
+        # factory blocks with windows
+        draw.rectangle([x0 + 12, y1 - 26, x0 + 56, y1 - 4],
+                       fill=(40, 32, 28))
+        draw.rectangle([x0 + 62, y1 - 32, x0 + 110, y1 - 4],
+                       fill=(40, 32, 28))
+        for wx in (x0 + 22, x0 + 72, x0 + 88):
+            draw.rectangle([wx, y1 - 20, wx + 8, y1 - 12],
+                           fill=(240, 200, 90))
+        # large flames rising from the middle block
+        fx = x0 + 84
+        draw.polygon([(fx, y0 + 2), (fx + 20, y0 + 26), (fx + 9, y0 + 26),
+                      (fx + 26, y1 - 6), (fx - 18, y1 - 6),
+                      (fx + 2, y0 + 26)], fill=(217, 84, 30))
+        draw.polygon([(fx + 2, y0 + 20), (fx + 13, y1 - 8),
+                      (fx - 9, y1 - 8)], fill=(240, 180, 40))
+        # smoke, right
+        draw.ellipse([x1 - 78, y0 + 4, x1 - 52, y0 + 20],
+                     fill=(140, 140, 140))
+        draw.ellipse([x1 - 62, y0 + 12, x1 - 38, y0 + 26],
+                     fill=(110, 110, 110))
     elif kind == "cricket":
-        draw.rectangle([x0, y1 - 30, x1, y1], fill=(46, 125, 50))
-        draw.rectangle([x0, y0, x1, y1 - 30], fill=(214, 234, 248))
-        for i, dx in enumerate((-14, 0, 14)):
-            draw.rectangle([cx + dx - 3, cy - 34, cx + dx + 3, cy + 6],
+        draw.rectangle([x0, y0, x1, y1 - 12], fill=(196, 224, 240))
+        draw.rectangle([x0, y1 - 12, x1, y1], fill=(46, 125, 50))
+        # stumps
+        for i, dx in enumerate((-12, 0, 12)):
+            draw.rectangle([cx + dx - 3, y0 + 8, cx + dx + 3, y1 - 12],
                            fill=(232, 196, 106), outline=INK, width=1)
-        draw.rectangle([cx - 20, cy - 40, cx + 20, cy - 34],
+        draw.rectangle([cx - 15, y0 + 4, cx + 15, y0 + 8],
                        fill=(232, 196, 106), outline=INK, width=1)
-        draw.ellipse([cx + 34, cy + 8, cx + 48, cy + 22], fill=ACCENT)
-        draw.line([(cx - 52, cy + 30), (cx - 8, cy - 12)],
-                  fill=(120, 72, 20), width=7)
-
-
-def draw_gulf_panel(draw, box):
-    """Headline illustration: a Gulf night skyline, fire, and sea."""
-    x0, y0, x1, y1 = box
-    draw.rectangle(box, fill=(24, 32, 54), outline=RULE, width=2)
-    # stars
-    for sx, sy in [(18, 14), (52, 26), (96, 10), (140, 24), (188, 12),
-                   (232, 28), (276, 16), (310, 30), (70, 44), (250, 46)]:
-        draw.ellipse([x0 + sx - 2, y0 + sy - 2, x0 + sx + 2, y0 + sy + 2],
-                     fill=(255, 255, 220))
-    # crescent moon
-    draw.ellipse([x0 + 268, y0 + 8, x0 + 302, y0 + 42], fill=(240, 230, 190))
-    draw.ellipse([x0 + 278, y0 + 4, x0 + 308, y0 + 38], fill=(24, 32, 54))
-    # skyline
-    heights = [46, 70, 54, 84, 60, 76, 48]
-    bx = x0 + 10
-    for h in heights:
-        draw.rectangle([bx, y1 - 34 - h, bx + 34, y1 - 34],
-                       fill=(12, 18, 36), outline=(70, 90, 130), width=1)
-        bx += 44
-    # flame over one building
-    fx = x0 + 132
-    draw.polygon([(fx, y0 + 52), (fx + 18, y0 + 82), (fx + 8, y0 + 82),
-                  (fx + 24, y0 + 100), (fx - 14, y0 + 100),
-                  (fx + 2, y0 + 82)], fill=(217, 84, 30))
-    draw.polygon([(fx + 2, y0 + 74), (fx + 12, y0 + 92),
-                  (fx - 8, y0 + 92)], fill=(240, 180, 40))
-    # sea
-    draw.rectangle([x0, y1 - 34, x1, y1], fill=(28, 68, 110))
-    for wy in (y1 - 24, y1 - 14):
-        for wx in range(x0 + 12, x1 - 20, 34):
-            draw.line([(wx, wy), (wx + 18, wy)], fill=(140, 190, 230),
-                      width=2)
+        # bat, diagonal with a thicker blade
+        draw.line([(cx - 62, y1 - 4), (cx - 24, y0 + 20)],
+                  fill=(120, 72, 20), width=9)
+        draw.line([(cx - 24, y0 + 20), (cx - 12, y0 + 8)],
+                  fill=(150, 100, 50), width=4)
+        # ball
+        draw.ellipse([cx + 40, y0 + 22, cx + 54, y0 + 36], fill=ACCENT)
 
 
 def build_image():
@@ -247,93 +304,93 @@ def build_image():
     draw.rectangle([20, 20, SIZE - 21, SIZE - 21], outline=RULE, width=1)
 
     # dateline strip
-    f_date = load_font(bold=True, size=19)
-    draw.text((MARGIN, 32), DATELINE, font=f_date, fill=INK)
-    right = "ONE DAY  |  THE WHOLE WORLD"
-    draw.text((SIZE - MARGIN - draw.textlength(right, font=f_date), 32),
+    f_date = load_font(bold=True, size=18)
+    draw.text((MARGIN, 34), DATELINE, font=f_date, fill=INK)
+    right = "ONE DAY  |  ONE PAGE"
+    draw.text((SIZE - MARGIN - draw.textlength(right, font=f_date), 34),
               right, font=f_date, fill=INK)
     draw_rule(draw, 60)
 
     # masthead
-    f_mast = load_font(bold=True, serif=True, size=66)
-    title = MASTHEAD
-    draw.text(((SIZE - draw.textlength(title, font=f_mast)) // 2, 72),
-              title, font=f_mast, fill=INK)
-    f_sub = load_font(bold=True, size=18)
-    sub = "THE WORLD'S NEWS OF MONDAY 23 NOVEMBER 2026, ON ONE PAGE"
-    draw.text(((SIZE - draw.textlength(sub, font=f_sub)) // 2, 146),
+    f_mast = load_font(bold=True, serif=True, size=62)
+    draw.text(((SIZE - draw.textlength(MASTHEAD, font=f_mast)) // 2, 70),
+              MASTHEAD, font=f_mast, fill=INK)
+    f_sub = load_font(bold=True, size=17)
+    sub = "ALL THE WORLD'S NEWS OF MONDAY 23 NOVEMBER 2026 \u2014 ON ONE PAGE"
+    draw.text(((SIZE - draw.textlength(sub, font=f_sub)) // 2, 142),
               sub, font=f_sub, fill=ACCENT)
-    draw_rule(draw, 176, width=3)
-    draw_rule(draw, 182, width=1)
+    draw_rule(draw, 168, width=3)
+    draw_rule(draw, 174, width=1)
 
-    # headline story
-    f_kick = load_font(bold=True, size=20)
-    draw.text((MARGIN, 194), HEADLINE_KICKER, font=f_kick, fill=ACCENT)
-    f_head = load_font(bold=True, serif=True, size=42)
-    y = 222
-    for line in wrap(draw, HEADLINE, f_head, SIZE - 2 * MARGIN):
+    # lead story
+    f_kick = load_font(bold=True, size=19)
+    draw.text((MARGIN, 186), LEAD_KICKER, font=f_kick, fill=ACCENT)
+    f_head = load_font(bold=True, serif=True, size=40)
+    y = 212
+    for line in wrap(draw, LEAD_HEADLINE, f_head, SIZE - 2 * MARGIN):
         draw.text((MARGIN, y), line, font=f_head, fill=INK)
-        y += 50
-    draw_rule(draw, y + 8, width=1)
+        y += 47
+    draw_rule(draw, 314, width=1)
 
-    # headline summary (left) + illustration (right)
-    text_y = y + 20
-    f_body = load_font(size=21)
-    panel = (SIZE - MARGIN - 330, text_y, SIZE - MARGIN, text_y + 148)
-    draw_gulf_panel(draw, panel)
-    body_w = SIZE - 2 * MARGIN - 350
-    by = text_y
-    for line in wrap(draw, HEADLINE_SUB, f_body, body_w):
-        draw.text((MARGIN, by), line, font=f_body, fill=INK)
-        by += 27
-    grid_top = text_y + 164
-    draw_rule(draw, grid_top, width=3)
+    # full-width banner illustration
+    draw_banner(draw, (MARGIN, 324, SIZE - MARGIN, 420))
 
-    # 2 x 2 story grid
+    # lead summary in two columns
+    f_body = load_font(size=19)
+    words = LEAD_SUB.split()
+    half = len(words) // 2
+    cols = [" ".join(words[:half]), " ".join(words[half:])]
+    col_w = (SIZE - 2 * MARGIN - 20) // 2
+    for i, text in enumerate(cols):
+        cx = MARGIN + i * (col_w + 20)
+        cy = 432
+        for line in wrap(draw, text, f_body, col_w):
+            draw.text((cx, cy), line, font=f_body, fill=INK)
+            cy += 25
+    draw_rule(draw, 544, width=3)
+
+    # 2 x 2 story grid, scene strip on top of each cell
     cell_w = (SIZE - 2 * MARGIN - 16) // 2
-    cell_h = 200
-    f_cell_kick = load_font(bold=True, size=17)
-    f_cell_head = load_font(bold=True, serif=True, size=25)
-    f_cell_body = load_font(size=17)
+    cell_h = 168
+    grid_top = 556
+    f_cell_kick = load_font(bold=True, size=15)
+    f_cell_head = load_font(bold=True, serif=True, size=23)
+    f_cell_body = load_font(size=15)
     for idx, story in enumerate(STORIES):
         col, row = idx % 2, idx // 2
         cx0 = MARGIN + col * (cell_w + 16)
-        cy0 = grid_top + 14 + row * (cell_h + 14)
+        cy0 = grid_top + row * (cell_h + 12)
         cx1 = cx0 + cell_w
         if col == 1:
             draw.line([(cx0 - 8, cy0), (cx0 - 8, cy0 + cell_h)],
                       fill=RULE, width=1)
         if row == 1:
-            draw_rule(draw, cy0 - 7, x0=cx0, x1=cx1, width=1)
-        icon_box = (cx0, cy0 + 26, cx0 + 104, cy0 + 130)
-        draw_icon(draw, story["icon"], icon_box)
-        tx = cx0 + 118
-        tw = cx1 - tx
-        draw.text((tx, cy0), story["kicker"], font=f_cell_kick,
+            draw_rule(draw, cy0 - 6, x0=cx0, x1=cx1, width=1)
+        draw_icon(draw, story["icon"], (cx0, cy0, cx1, cy0 + 44))
+        draw.text((cx0, cy0 + 52), story["kicker"], font=f_cell_kick,
                   fill=ACCENT)
-        hy = cy0 + 24
-        for line in wrap(draw, story["headline"], f_cell_head, tw):
-            draw.text((tx, hy), line, font=f_cell_head, fill=INK)
-            hy += 30
-        by = hy + 6
-        for line in wrap(draw, story["body"], f_cell_body, tw):
-            draw.text((tx, by), line, font=f_cell_body, fill=MUTED)
-            by += 21
+        hy = cy0 + 72
+        for line in wrap(draw, story["headline"], f_cell_head, cell_w):
+            draw.text((cx0, hy), line, font=f_cell_head, fill=INK)
+            hy += 26
+        by = hy + 4
+        for line in wrap(draw, story["body"], f_cell_body, cell_w):
+            draw.text((cx0, by), line, font=f_cell_body, fill=MUTED)
+            by += 18
 
-    # also-today strip (one line) and footer, kept clear of each other
-    strip_y = grid_top + 14 + 2 * cell_h + 12 + 6
+    # also-today strip and footer
+    strip_y = grid_top + 2 * cell_h + 12 + 10
     draw_rule(draw, strip_y, width=3)
-    f_also = load_font(bold=True, size=16)
+    f_also = load_font(bold=True, size=15)
     ay = strip_y + 10
     for line in wrap(draw, ALSO_TODAY, f_also, SIZE - 2 * MARGIN):
         draw.text((MARGIN, ay), line, font=f_also, fill=INK)
-        ay += 22
+        ay += 20
 
-    # footer
-    draw_rule(draw, SIZE - 46, width=1)
-    f_foot = load_font(size=15)
+    draw_rule(draw, SIZE - 52, width=1)
+    f_foot = load_font(size=14)
     draw.text(((SIZE - draw.textlength(FOOTER, font=f_foot)) // 2,
-               SIZE - 38), FOOTER, font=f_foot, fill=MUTED)
+               SIZE - 44), FOOTER, font=f_foot, fill=MUTED)
 
     return img
 

@@ -1,4 +1,4 @@
-# The World in One Day — 23 November 2026
+# The World Today — 23 November 2026
 
 A newspaper front page that sums up the world's news of Monday
 23 November 2026, drawn entirely in code. Built by an AI agent for
@@ -9,36 +9,35 @@ Referral code: **t32jh3bx**
 
 ## The day on the page
 
-- **The Gulf — Bahrain takes Iran to the U.N. after a strike on a
-  civilian plant.** Bahrain says an Iranian strike set a civilian
-  industrial facility ablaze near Manama, with no injuries reported.
-  Saudi Arabia condemns the attack and backs Bahrain's call for United
-  Nations action, as a Houthi missile aimed at western Saudi Arabia is
-  intercepted.
-- **Markets — Wall Street opens the week in correction.** The S&P 500
-  closed Friday at 6,910.39, down 8.61% on the week and 3.7% on the day,
-  as AI shares slid. The Nasdaq fell 10% on the week; Nvidia lost 22.9%
-  amid reports of an SEC accounting probe.
-- **Science — BepiColombo is now circling Mercury.** After eight years
-  and 6 billion miles, the ESA–JAXA probe has been captured by
-  Mercury's gravity — only the second mission ever to orbit the smallest
-  planet. Its two orbiters part in December.
-- **Disaster — Search resumes after the Java factory fire.** Rescuers
-  are searching for dozens missing after a fire tore through a candy
-  factory in Cikande, Banten. Three are confirmed dead; seven body bags
-  recovered.
-- **Sport — India declare 720/9 in Wellington.** India posted the
-  highest Test innings ever in New Zealand, declaring at 720/9 for a
-  352-run lead. New Zealand closed day four on 119/2, still 233 behind.
+- **Climate — COP31 ends with no deal in Antalya.** After two weeks
+  of talks, the longest climate summit ever, more than 190 countries
+  rejected the Antalya Pact because its final draft never mentioned
+  fossil fuels. The EU refused a deal that ignored the cause of
+  warming; oil states pushed back. First major breakdown since
+  Copenhagen in 2009.
+- **War — Drone strike near Kyiv leaves 14 missing.** A Russian
+  drone hit a five-storey block in Dymer, north of Kyiv, collapsing
+  part of it. Nine were evacuated.
+- **Crime — FBI most-wanted 'Chapo Isidro' captured.** Mexican
+  forces seized Fausto Isidro Meza-Flores in Guasave, Sinaloa.
+  Eleven died in the gun battles that followed the raid.
+- **Disaster — Dozens missing after Java factory fire.** Fire tore
+  through a candy factory in Cikande, Banten. Three are dead and 24
+  body bags recovered as the search resumes.
+- **Sport — India declare on a record 720/9.** India posted the
+  highest Test innings ever in New Zealand, declaring at 720/9 on
+  day four of the first Test in Wellington.
 
-Also on the page: COP31 ends with no deal in Antalya, and Nepal's
-Prime Minister Shah meets PM Modi in New Delhi.
+Also on the page: Nepal PM Shah holds talks with Modi in New Delhi;
+Seoul's education minister quits over an AI exam-cheating scandal;
+a Russian cargo ship is still burning off Finland.
 
 ## How it works
 
-`main.py` draws the whole front page with Pillow — masthead, headline,
-four stories with small drawn illustrations, the also-today strip, and
-the footer — and writes `entry.png` (1024×1024). The stories, fonts,
+`main.py` draws the whole front page with Pillow — masthead, lead
+story with a full-width banner illustration and a two-column summary,
+four stories with drawn scene strips, the also-today strip, and the
+footer — and writes `entry.png` (1024×1024). The stories, fonts,
 and geometry are fixed in the code, so the output is deterministic:
 run it twice and the bytes are identical.
 
